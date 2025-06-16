@@ -3,6 +3,7 @@ import os
 from dotenv import load_dotenv
 from app.models import LongTermMemory
 from app import db
+from app.rag_engine import get_rag_answer
 
 # Load the API key
 load_dotenv()
@@ -17,7 +18,7 @@ def store_memory(user_id, user_input, reply=None):
     db.session.add(memory)
     db.session.commit()
 
-def call_api(user_input, user_id=None, short_term_memory=None, long_term_memory=None):
+def call_api(user_input, user_id=None, short_term_memory=None, long_term_memory=None,rag_context=None):
     url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -33,6 +34,18 @@ def call_api(user_input, user_id=None, short_term_memory=None, long_term_memory=
                 "role": "system",
                 "content": f"Remember this about the user: {memory['content']}"
             })
+
+    # 🔍 Fetch RAG context dynamically
+    rag_context = get_rag_answer(user_input)
+    print(" RAG context:", rag_context)
+
+    if rag_context:
+        messages.append({
+            "role": "system",
+            "content": f"Use this external context to help answer the question: {rag_context}"
+        })
+
+        
 
 
     if short_term_memory:

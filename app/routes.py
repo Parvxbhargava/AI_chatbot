@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, jsonif
 from flask_login import login_required, current_user
 from app.api import call_api
 from app.models import LongTermMemory  # make sure this matches your model name
+from app.rag_engine import get_rag_answer
 from app import db
 
 main = Blueprint("main", __name__)
@@ -36,10 +37,14 @@ def chat_message():
     user_memories = LongTermMemory.query.filter_by(user_id=current_user.id).all()
     long_term_memory = [{"role": "user", "content": m.content} for m in user_memories]
 
+    #rag implementation
+    rag_response=get_rag_answer
+
     # Call the chatbot API
     reply = call_api(user_input, user_id=current_user.id,
                      short_term_memory=short_term_memory,
-                     long_term_memory=long_term_memory)
+                     long_term_memory=long_term_memory,
+                     rag_context=rag_response)
 
     # Save assistant reply in conversation
     conversation.append({"role": "assistant", "content": reply})
